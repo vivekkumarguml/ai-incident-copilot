@@ -1,0 +1,18 @@
+# Environment variables (VERY IMPORTANT)
+.env
+backend/.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node (for frontend later)
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
