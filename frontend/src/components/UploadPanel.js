@@ -1,23 +1,68 @@
-// components/UploadPanel.js
+// src/components/UploadPanel.js
+
 import React, { useState } from "react";
-import { API } from "../api";
+import { uploadPDF } from "../api"; // use your API helper (cleaner abstraction)
 
 function UploadPanel() {
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState(null);      // stores selected file
+  const [loading, setLoading] = useState(false); // upload state
 
-  const uploadFile = async () => {
-    const formData = new FormData();
-    formData.append("file", file);
+  // Handle file upload
+  const handleUpload = async () => {
+    // ❗ Validation: no file selected
+    if (!file) {
+      alert("Please select a file first");
+      return;
+    }
 
-    await API.post("/upload/", formData);
-    alert("Uploaded!");
+    try {
+      setLoading(true);
+
+      // Call backend API
+      const res = await uploadPDF(file);
+
+      console.log("Upload response:", res);
+
+      // Handle backend error
+      if (res.error) {
+        alert("Upload failed: " + res.error);
+      } else {
+        alert("File uploaded successfully ✅");
+      }
+
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Something went wrong during upload ❌");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ padding: "10px", borderRight: "1px solid #ccc" }}>
+    <div style={{ padding: "15px", borderRight: "1px solid #ccc", width: "250px" }}>
+      
       <h3>Upload Logs</h3>
-      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-      <button onClick={uploadFile}>Upload</button>
+
+      {/* File Input */}
+      <input
+        type="file"
+        accept=".pdf" // restrict to PDF only
+        onChange={(e) => setFile(e.target.files[0])}
+      />
+
+      <br /><br />
+
+      {/* Upload Button */}
+      <button onClick={handleUpload} disabled={loading}>
+        {loading ? "Uploading..." : "Upload"}
+      </button>
+
+      {/* Optional: show selected file */}
+      {file && (
+        <p style={{ fontSize: "12px", marginTop: "10px" }}>
+          Selected: {file.name}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,59 +1,65 @@
 from fastapi import FastAPI, UploadFile, File
-from rag import process_document, query_rag
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-import os
-from pymongo import MongoClient
-
-client = MongoClient(os.getenv("MONGO_URI"))
-db = client["incidentDB"]
-collection = db["documents"]
-
-load_dotenv()
+from ingestion import process_file
+from rag import process_document, query_rag
+from db import collection
 
 app = FastAPI()
-DB = {}
+
+# ✅ CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ✅ In-memory storage (YOU MISSED THIS)
+DB = {}
+
 
 @app.post("/upload/")
 async def upload(file: UploadFile = File(...)):
     content = await file.read()
 
     try:
-        text = content.decode("utf-8")
-    except:
-        return {"error": "Only .txt files supported"}
+        # 🔹 Process file
+        text = process_file(content, file.filename)
+        data = process_document(text)
 
-    # ✅ 1. Store in MongoDB (persistence)
-    collection.insert_one({"text": text})
+        # 🔹 Store in memory (for RAG)
+        DB["data"] = data
 
-    # ✅ 2. Process for RAG (embeddings)
-    DB["data"] = process_document(text)
+        # 🔥 Store in MongoDB
+        collection.insert_one({
+            "filename": file.filename,
+            "text": text
+        })
 
-    return {"message": "File uploaded & processed successfully"}
+        print("✅ Stored in MongoDB + RAG ready")
 
-@app.post("/query/")
-async def query(q: str):
+        return {"message": "File processed successfully"}
 
-    # ✅ If RAG not already built (server restart case)
+    except Exception as e:
+        print("🔥 UPLOAD ERROR:", str(e))
+        return {"error": str(e)}
+
+
+@app.get("/query/")
+def query(q: str):
+    #print("📩 Query received:", q)
+
     if "data" not in DB:
-        docs = list(collection.find())
+        return {"error": "No document uploaded yet"}
 
-        # ❌ No data in MongoDB
-        if not docs:
-            return {"error": "No document uploaded"}
+    try:
+        response = query_rag(q, DB["data"])
 
-        # ✅ Combine all stored documents
-        combined_text = " ".join([doc["text"] for doc in docs])
+        print("🤖 RAG response:", response)
 
-        # ✅ Rebuild RAG from stored data
-        DB["data"] = process_document(combined_text)
+        return {"response": response}
 
-    # ✅ Run query on RAG
-    return query_rag(q, DB["data"])
+    except Exception as e:
+        print("🔥 QUERY ERROR:", str(e))
+        return {"error": str(e)}
