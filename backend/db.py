@@ -1,5 +1,5 @@
 # db.py
-
+import certifi
 import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -10,7 +10,10 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 
 # Create client
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI,
+                     tls=True,
+                        tlsCAFile=certifi.where()
+                    )
 
 # Select DB + collection
 db = client["aiincidentcopilot"]

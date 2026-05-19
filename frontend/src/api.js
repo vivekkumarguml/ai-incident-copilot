@@ -8,7 +8,7 @@ import axios from "axios";
  * - withCredentials allows cookies if needed (safe to keep)
  */
 export const API = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: "/api",
   withCredentials: true,
 });
 
