@@ -48,3 +48,9 @@ yarn-error.log*
 # =========================
 coverage/
 .cache/
+
+# =========================
+# Kuberetes 
+# =========================
+
+k8s/secrets.yaml

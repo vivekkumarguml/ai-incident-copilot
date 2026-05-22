@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: backend-deployment
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+
+    spec:
+      containers:
+      - name: backend
+
+        image: vivekkumar165/ai-incident-copilot-backend:latest
+
+        ports:
+        - containerPort: 8000
+
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MONGO_URI
+
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GROQ_API_KEY
